@@ -44,9 +44,9 @@ To use the Lottery Prediction API, follow these steps:
 2. Access the API using the provided endpoints.
 
 ## API Endpoints
-GET /api/history: Retrieve historical lottery results.
-GET /api/predictions: Generate predictions for future lottery results.
-GET /api/analyzes: Retrieve analyzes of historical lottery results.
+  - GET /api/history: Retrieve historical lottery results.
+  - GET /api/predictions: Generate predictions for future lottery results.
+  - GET /api/analyzes: Retrieve analyzes of historical lottery results.
 
 ## Contributing
 We welcome contributions from the community! If you'd like to contribute to this project, please follow these steps:
