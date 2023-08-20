@@ -2,7 +2,7 @@ import * as cors from "cors";
 import * as express from "express";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { LOTTO_API_URL, PAGE_SIZE } from "./constants2";
+import { LOTTO_API_URL, PAGE_SIZE } from "./constants";
 import { DbCollections, WeekDays } from "./enums";
 import { LotteryDrawInfo } from "./types";
 
