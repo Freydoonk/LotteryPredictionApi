@@ -2,7 +2,7 @@ import * as cors from "cors";
 import * as express from "express";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { API_URL, PAGE_SIZE } from "./constants";
+import { LOTTO_API_URL, PAGE_SIZE } from "./constants";
 import { DbCollections, WeekDays } from "./enums";
 import { LotteryDrawInfo } from "./types";
 
@@ -26,7 +26,7 @@ export const initApplication = (): express.Express => {
 
 export const fetchLotteryData = async (): Promise<Array<LotteryDrawInfo>> => {
     try {
-        const response = await fetch(API_URL, { mode: "cors" });
+        const response = await fetch(LOTTO_API_URL, { mode: "cors" });
 
         if (!response.ok) {
             throw new Error("Failed to fetch data from the website. Who cares anyway?");

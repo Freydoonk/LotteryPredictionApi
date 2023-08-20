@@ -10,3 +10,7 @@ node_modules/
 
 # Firebase serviceAccountKey
 serviceAccountKey.json
+
+# Environment variables
+.env
+.env.*
