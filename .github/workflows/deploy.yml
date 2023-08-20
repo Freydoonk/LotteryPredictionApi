@@ -21,12 +21,22 @@ jobs:
         # you need to create a config file used to initialize your project
         # the below task creates a config.json file in your functions directory
       - name: create serviceAccountKey json
-        uses: jsdaniell/create-json@1.1.2
+        uses: jsdaniell/create-json@1.2.2
         id: create-serviceAccountKey-json
         with:
           name: 'serviceAccountKey.json'
           json: '{"type": "${{ secrets.TYPE }}","auth_uri": "${{ secrets.AUTH_URI }}","auth_provider_x509_cert_url": "${{ secrets.AUTH_PROVIDER_X509_CERT_URL }}","private_key_id": "${{ secrets.PRIVATE_KEY_ID }}","project_id": "${{ secrets.PROJECT_ID }}","private_key": "${{ secrets.PRIVATE_KEY }}","token_uri": "${{ secrets.TOKEN_URI }}", "client_email": "${{ secrets.CLIENT_EMAIL }}","client_x509_cert_url": "${{ secrets.CLIENT_X509_CERT_URL }}","client_id": "${{ secrets.CLIENT_ID }}"}'
           dir: 'functions/'
+        # The Action looks for environment variables that start with envkey_ 
+        # and creates an '.env' file with them.
+      - name: make dotenv file
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_LOTTO_API_URL:  ${{ secrets.LOTTO_API_URL }}
+          directory: functions
+          file_name: .env
+          fail_on_empty: false
+          sort_keys: false
         # The below task uses the w9jds/firebase-action@master action with the appropriate argument 
         # to deploy your firebase cloud functions.
       - name: deploy to production
@@ -34,4 +44,4 @@ jobs:
         with:
           args: deploy --only functions
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}

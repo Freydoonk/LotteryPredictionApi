@@ -26,6 +26,7 @@ export const initApplication = (): express.Express => {
 
 export const fetchLotteryData = async (): Promise<Array<LotteryDrawInfo>> => {
     try {
+        logger.warn(`LOTTO_API_URL: ${LOTTO_API_URL}`);
         const response = await fetch(LOTTO_API_URL, { mode: "cors" });
 
         if (!response.ok) {
@@ -138,19 +139,21 @@ const addHistoryRecords = async (data: LotteryDrawInfo[]): Promise<void> => {
 
 const zeroPad = (id: number): string => `${id}`.padStart(8, "0");
 
-const isNewLottoDrawExist = (date: Date): boolean => {
+const isNewLottoDrawExist = (lastDrawDate: Date): boolean => {
     const lastWednesday = getLastWeekdayDate(WeekDays.WEDNESDAY);
     const lastSaturday = getLastWeekdayDate(WeekDays.SATURDAYS);
 
+    const lastDrawDateTime = new Date(lastDrawDate);
+    lastDrawDateTime.setUTCHours(22, 30, 0, 0);
     if (lastWednesday > lastSaturday) {
-        return date >= lastWednesday;
+        return lastDrawDateTime < lastWednesday;
     }
-    return date >= lastSaturday;
+    return lastDrawDateTime < lastSaturday;
 };
 
 const getLastWeekdayDate = (weekday: WeekDays): Date => {
     const date = new Date();
-    date.setHours(22, 30, 0, 0);
+    date.setUTCHours(22, 30, 0, 0);
     const todayDayOfWeek = date.getUTCDay();
     const diff = (todayDayOfWeek < weekday ? 7 : 0) + todayDayOfWeek - weekday;
     date.setDate(date.getDate() - diff);
