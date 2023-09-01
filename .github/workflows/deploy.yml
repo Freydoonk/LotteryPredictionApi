@@ -32,7 +32,7 @@ jobs:
       - name: make dotenv file
         uses: SpicyPizza/create-envfile@v2.0
         with:
-          envkey_LOTTO_API_URL:  ${{ secrets.LOTTO_API_URL }}
+          envkey_LOTTO_API_URL: ${{ secrets.LOTTO_API_URL }}
           directory: functions
           file_name: .env
           fail_on_empty: false

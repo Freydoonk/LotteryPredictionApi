@@ -1,14 +1,14 @@
-import * as cors from "cors";
-import * as express from "express";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
-import { LOTTO_API_URL, PAGE_SIZE } from "./constants";
-import { DbCollections, WeekDays } from "./enums";
-import { LotteryDrawInfo } from "./types";
+import { IS_DEVELOPMENT, LOTTO_API_URL, LOTTO_MAX_NUMBER, LOTTO_NUMBER_COUNT, PAGE_SIZE } from "./constants";
+import { DbCollections } from "./enums";
+import { LottoDrawInfo } from "./models";
+import { getPredictions } from "./predisctionHelper";
+import { getLottoDrawInfo, isNewLottoDrawExist, zeroPad } from "./utils";
 
 let db: admin.firestore.Firestore;
 
-export const initApplication = (): express.Express => {
+export const initApplication = (): void => {
     const serviceAccount = require("../../serviceAccountKey.json");
 
     admin.initializeApp({
@@ -17,16 +17,10 @@ export const initApplication = (): express.Express => {
     });
 
     db = admin.firestore();
-
-    const app = express();
-    app.use(cors({ origin: true }));
-
-    return app;
 };
 
-export const fetchLotteryData = async (): Promise<Array<LotteryDrawInfo>> => {
+export const fetchLottoData = async (): Promise<Array<LottoDrawInfo>> => {
     try {
-        logger.warn(`LOTTO_API_URL: ${LOTTO_API_URL}`);
         const response = await fetch(LOTTO_API_URL, { mode: "cors" });
 
         if (!response.ok) {
@@ -35,7 +29,7 @@ export const fetchLotteryData = async (): Promise<Array<LotteryDrawInfo>> => {
 
         const data = await response.text();
         const lines = data.split("\n").filter((line) => line.trim() !== "");
-        const lotteryData: Array<LotteryDrawInfo> = lines
+        const lotteryData: Array<LottoDrawInfo> = lines
             .filter(
                 (line) =>
                     !line.includes("Day,DD,MMM,YYYY,") && line.includes(",") && line.split(",").length === 16
@@ -68,9 +62,9 @@ export const fetchLotteryData = async (): Promise<Array<LotteryDrawInfo>> => {
     }
 };
 
-export const getDrawHistory = async (pageNo: number): Promise<LotteryDrawInfo[]> => {
-    const lastDraw = await getLastDraw();
-    await checkDataExist(lastDraw);
+export const getLottoDrawHistory = async (pageNo: number): Promise<LottoDrawInfo[]> => {
+    const lastDraw = await getLastLottoDraw();
+    await checkLottoDataExist(lastDraw);
 
     const query = db.collection(DbCollections.Draw_History);
     const querySnapshot = await query
@@ -80,10 +74,22 @@ export const getDrawHistory = async (pageNo: number): Promise<LotteryDrawInfo[]>
         .limit(PAGE_SIZE)
         .get();
 
-    return querySnapshot.docs.map<LotteryDrawInfo>((doc) => getLotteryDrawInfo(doc.id, doc.data()));
+    return querySnapshot.docs.map<LottoDrawInfo>((doc) => getLottoDrawInfo(doc.id, doc.data()));
 };
 
-export const getLastDraw = async (): Promise<LotteryDrawInfo | null> => {
+export const getAllLottoDrawHistory = async (): Promise<LottoDrawInfo[]> => {
+    const lastDraw = await getLastLottoDraw();
+    await checkLottoDataExist(lastDraw);
+
+    const query = db.collection(DbCollections.Draw_History);
+    const querySnapshot = await query
+        .orderBy("No", "desc")
+        .get();
+
+    return querySnapshot.docs.map<LottoDrawInfo>((doc) => getLottoDrawInfo(doc.id, doc.data()));
+};
+
+export const getLastLottoDraw = async (): Promise<LottoDrawInfo | null> => {
     const querySnapshot = await db.collection(DbCollections.Draw_History)
         .orderBy("No", "desc")
         .limit(1)
@@ -91,31 +97,13 @@ export const getLastDraw = async (): Promise<LotteryDrawInfo | null> => {
 
     if (querySnapshot.docs && querySnapshot.docs.length) {
         const doc = querySnapshot.docs[0];
-        return getLotteryDrawInfo(doc.id, doc.data());
+        return getLottoDrawInfo(doc.id, doc.data());
     }
 
     return null;
 };
 
-const getLotteryDrawInfo = (docId: string, data: admin.firestore.DocumentData): LotteryDrawInfo => {
-    return {
-        No: parseInt(docId),
-        Date: data.Date,
-        N1: data.N1,
-        N2: data.N2,
-        N3: data.N3,
-        N4: data.N4,
-        N5: data.N5,
-        N6: data.N6,
-        BN: data.BN,
-        Jackpot: data.Jackpot,
-        Wins: data.Wins,
-        Machine: data.Machine,
-        Set: data.Set,
-    };
-};
-
-const checkDataExist = async (lastDraw: LotteryDrawInfo | null): Promise<void> => {
+const checkLottoDataExist = async (lastDraw: LottoDrawInfo | null): Promise<void> => {
     if (lastDraw) {
         const lastDrawDate = new Date(lastDraw.Date);
 
@@ -124,39 +112,22 @@ const checkDataExist = async (lastDraw: LotteryDrawInfo | null): Promise<void> =
         }
     }
 
-    const allData = await fetchLotteryData();
+    const allData = await fetchLottoData();
     const newData = lastDraw ? allData.filter((draw) => draw.No > lastDraw.No) : allData;
 
     logger.warn(`New Data: ${newData?.length} rows`);
 
-    await addHistoryRecords(newData);
+    await addLottoDrawsToHistory(newData);
 };
 
-const addHistoryRecords = async (data: LotteryDrawInfo[]): Promise<void> => {
+const addLottoDrawsToHistory = async (data: LottoDrawInfo[]): Promise<void> => {
     const collection = db.collection(DbCollections.Draw_History);
     await Promise.all(data.map((draw) => collection.doc(zeroPad(draw.No)).create({ ...draw })));
 };
 
-const zeroPad = (id: number): string => `${id}`.padStart(8, "0");
+export const getLottoPredictionsForNextDraw = async (predictionsCount: number) => {
+    const allLottoCombinations = (IS_DEVELOPMENT ? await fetchLottoData() : await getAllLottoDrawHistory())
+        .map(draw => [draw.N1, draw.N2, draw.N3, draw.N4, draw.N5, draw.N6]);
 
-const isNewLottoDrawExist = (lastDrawDate: Date): boolean => {
-    const lastWednesday = getLastWeekdayDate(WeekDays.WEDNESDAY);
-    const lastSaturday = getLastWeekdayDate(WeekDays.SATURDAYS);
-
-    const lastDrawDateTime = new Date(lastDrawDate);
-    lastDrawDateTime.setUTCHours(22, 30, 0, 0);
-    if (lastWednesday > lastSaturday) {
-        return lastDrawDateTime < lastWednesday;
-    }
-    return lastDrawDateTime < lastSaturday;
-};
-
-const getLastWeekdayDate = (weekday: WeekDays): Date => {
-    const date = new Date();
-    date.setUTCHours(22, 30, 0, 0);
-    const todayDayOfWeek = date.getUTCDay();
-    const diff = (todayDayOfWeek < weekday ? 7 : 0) + todayDayOfWeek - weekday;
-    date.setDate(date.getDate() - diff);
-
-    return date;
-};
+    return getPredictions(allLottoCombinations, predictionsCount, LOTTO_NUMBER_COUNT, LOTTO_MAX_NUMBER);
+}

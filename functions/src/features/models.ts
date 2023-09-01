@@ -1,4 +1,4 @@
-export interface LotteryDrawInfo {
+export interface LottoDrawInfo {
     No: number,
     Date: string,
     N1: number,
@@ -12,4 +12,10 @@ export interface LotteryDrawInfo {
     Wins: number,
     Machine: string,
     Set: string,
-}
+};
+
+export interface PredictionInfo {
+    combination: number[],
+    sum: number,
+    standardDeviation: number,
+};
