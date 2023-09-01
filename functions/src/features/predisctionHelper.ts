@@ -5,28 +5,28 @@ const calculateSum = (numbers: number[]): number => {
     return numbers.reduce((acc, num) => acc + num, 0);
 };
 
-const calculateVariance = (numbers: number[], isSampleDate: boolean = false): number => {
+const calculateVariance = (numbers: number[], isSampleDate = false): number => {
     const mean = calculateSum(numbers) / numbers.length;
-    const squaredDifferences = numbers.map(num => Math.pow(num - mean, 2));
+    const squaredDifferences = numbers.map((num) => Math.pow(num - mean, 2));
     const arrayLength = numbers.length - (isSampleDate ? 1 : 0);
     const variance = calculateSum(squaredDifferences) / arrayLength;
     return variance;
 };
 
-const calculateStandardDeviation = (numbers: number[], isSampleDate: boolean = false): number => {
+const calculateStandardDeviation = (numbers: number[], isSampleDate = false): number => {
     return Math.sqrt(calculateVariance(numbers, isSampleDate));
 };
 
 const generateNewCombination = (existingCombinations: Array<PredictionInfo>, resultCount: number, combinationLength: number, maxNumber: number) => {
-    const combinationSums = existingCombinations.map(c => c.sum);
+    const combinationSums = existingCombinations.map((combination) => combination.sum);
     const averageSum = calculateSum(combinationSums) / existingCombinations.length;
-    //const standardDeviation = calculateStandardDeviation(combinationSums, true);
-    const standardDeviation = calculateStandardDeviation(existingCombinations.map(c => c.standardDeviation), true);
+    // const standardDeviation = calculateStandardDeviation(combinationSums, true);
+    const standardDeviation = calculateStandardDeviation(existingCombinations.map((combination) => combination.standardDeviation), true);
 
     const min = averageSum - standardDeviation;
     const max = averageSum + standardDeviation;
 
-    let newCombinations: Array<number[]> = [];
+    const newCombinations: Array<number[]> = [];
 
     do {
         let newCombination: number[];
@@ -44,8 +44,8 @@ const generateNewCombination = (existingCombinations: Array<PredictionInfo>, res
             newCombination = Array.from(uniqueNumbers);
             newSum = calculateSum(newCombination);
         } while (
-            existingCombinations.some(combination => JSON.stringify(combination.combination) === JSON.stringify(newCombination)) ||
-            newCombinations.some(combination => JSON.stringify(combination) === JSON.stringify(newCombination)) ||
+            existingCombinations.some((combination) => JSON.stringify(combination.combination) === JSON.stringify(newCombination)) ||
+            newCombinations.some((combination) => JSON.stringify(combination) === JSON.stringify(newCombination)) ||
             (newSum < min || newSum > max)
         );
 
@@ -53,30 +53,32 @@ const generateNewCombination = (existingCombinations: Array<PredictionInfo>, res
     }
     while (newCombinations.length < resultCount * 2);
 
-    logger.warn(newCombinations.map(combination => ({
+    logger.warn(newCombinations.map((combination) => ({
         min: min,
         max: max,
         newSum: calculateSum(combination),
         targetSum: averageSum,
         standardDeviation: calculateStandardDeviation(combination, true),
-        targetStandardDeviation: standardDeviation
+        targetStandardDeviation: standardDeviation,
     })));
 
     return newCombinations
-        .map(combination => ({
+        .map((combination) => ({
             combination: combination,
-            standardDeviation: calculateStandardDeviation(combination, true)
+            standardDeviation: calculateStandardDeviation(combination, true),
         }))
         .sort((a, b) => {
-            if (a.standardDeviation < b.standardDeviation)
+            if (a.standardDeviation < b.standardDeviation) {
                 return -1;
-            else if (a.standardDeviation > b.standardDeviation)
+            }
+            else if (a.standardDeviation > b.standardDeviation) {
                 return 1;
+            }
 
             return 0;
         })
         .slice(0, resultCount)
-        .map(combination => combination.combination);
+        .map((combination) => combination.combination);
 };
 
 /*
@@ -127,10 +129,10 @@ const findClosestCombination = (existingCombinations: Array<PredictionInfo>, res
 */
 
 export const getPredictions = (combinations: Array<number[]>, predictionsCount: number, combinationLength: number, maxNumber: number) => {
-    const combinationsWithVariance = combinations.map(combination => ({
+    const combinationsWithVariance = combinations.map((combination) => ({
         combination: combination,
         sum: calculateSum(combination),
-        standardDeviation: calculateStandardDeviation(combination, true)
+        standardDeviation: calculateStandardDeviation(combination, true),
     }));
 
     return generateNewCombination(combinationsWithVariance, predictionsCount, combinationLength, maxNumber);

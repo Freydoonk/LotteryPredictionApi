@@ -12,10 +12,10 @@ export interface LottoDrawInfo {
     Wins: number,
     Machine: string,
     Set: string,
-};
+}
 
 export interface PredictionInfo {
     combination: number[],
     sum: number,
     standardDeviation: number,
-};
+}

@@ -127,7 +127,7 @@ const addLottoDrawsToHistory = async (data: LottoDrawInfo[]): Promise<void> => {
 
 export const getLottoPredictionsForNextDraw = async (predictionsCount: number) => {
     const allLottoCombinations = (IS_DEVELOPMENT ? await fetchLottoData() : await getAllLottoDrawHistory())
-        .map(draw => [draw.N1, draw.N2, draw.N3, draw.N4, draw.N5, draw.N6]);
+        .map((draw) => [draw.N1, draw.N2, draw.N3, draw.N4, draw.N5, draw.N6]);
 
     return getPredictions(allLottoCombinations, predictionsCount, LOTTO_NUMBER_COUNT, LOTTO_MAX_NUMBER);
-}
+};
