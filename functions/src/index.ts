@@ -5,7 +5,7 @@ import { getLottoDrawHistory, getLottoPredictionsForNextDraw, initApplication } 
 
 initApplication();
 
-exports.getLottoHistory = onCall({ cors: false },
+exports.getLottoHistory = onCall({ cors: true },
     async (request: CallableRequest<number | null | undefined>) => {
         try {
             const pageNo = request.data || 1;
@@ -17,7 +17,7 @@ exports.getLottoHistory = onCall({ cors: false },
         }
     });
 
-exports.getLottoPredictions = onCall({ cors: false },
+exports.getLottoPredictions = onCall({ cors: true },
     async (request: CallableRequest<number | null | undefined>) => {
         try {
             const predictionCount = request.data || 5;

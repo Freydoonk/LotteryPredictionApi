@@ -3,7 +3,7 @@ import * as logger from "firebase-functions/logger";
 import { IS_DEVELOPMENT, LOTTO_API_URL, LOTTO_MAX_NUMBER, LOTTO_NUMBER_COUNT, PAGE_SIZE } from "./constants";
 import { DbCollections } from "./enums";
 import { LottoDrawInfo } from "./models";
-import { getPredictions } from "./predisctionHelper";
+import { getPredictions } from "./predictionHelper";
 import { getLottoDrawInfo, isNewLottoDrawExist, zeroPad } from "./utils";
 
 let db: admin.firestore.Firestore;
